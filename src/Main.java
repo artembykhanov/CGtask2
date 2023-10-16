@@ -2,7 +2,7 @@ import static javafx.application.Application.launch;
 
 public class Main {
     public static void main(String[] args) {
-        String formula = "cbr(x)";
+        String formula = "sin(E^x)";
 
        LinearFunction plotter1 = new LinearFunction();
        plotter1.setFormula(formula);

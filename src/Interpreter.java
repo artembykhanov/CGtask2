@@ -9,7 +9,7 @@ public abstract class Interpreter {
     private static double result;
     private static boolean hasError = false;
 
-    private static boolean isVariable(String operator, int[] ind) {
+    private static boolean isVariable(String operator, int[] ind) {//Проверка является ли переменной из variableNames
         int i = variableNames.indexOf(operator);
         if (i != -1) {
             ind[0] = i;
@@ -20,7 +20,7 @@ public abstract class Interpreter {
         }
     }
 
-    private static int findClosingBracketPosition(String operator, int start) {
+    private static int findClosingBracketPosition(String operator, int start) {//Находит позицию закрывающей скобки
         int result = start;
         for (int i = start; i < operator.length(); i++) {
             switch (operator.substring(i, i + 1)) {
@@ -36,31 +36,32 @@ public abstract class Interpreter {
     }
 
     private static FormulaElement parseExpression(String operator) {
-        if (operator.length() == 0) {
+        if (operator.length() == 0) {//Проверка на пустую строку
             handleError();
         }
+        //Проверяем начинается ли с "(" и заканчивается на ")", если так, то отбрасываем скобки
         if (operator.startsWith("(") && findClosingBracketPosition(operator, 0) == operator.length() - 1) {
             operator = operator.substring(1, operator.length() - 1);
         }
         try {
             result = Double.parseDouble(operator);
-            return new FormulaNumberElement(result);
-        } catch (NumberFormatException e) {
-            // Ignore and continue
+            return new FormulaNumberElement(result);//Проверка на число
+        } catch (NumberFormatException ignored) {
         }
 
         if (operator.equals("PI")) {
             return new FormulaNumberElement(Math.PI);
-        } else if (operator.equals("E")) {
+        } else if (operator.equals("E")) {          //Проверка на константы
             return new FormulaNumberElement(Math.E);
         }
 
-        int[] ind = new int[1];
-        if (operator.length() == 1 && isVariable(operator, ind)) {
+        int[] ind = new int[1]; //Массив для хранения индекса переменной
+
+        if (operator.length() == 1 && isVariable(operator, ind)) { //Если переменная, то создаётся объект этой переменной
             return new FormulaVariableElement(ind[0]);
         }
 
-        if (operator.length() > 4 && operator.charAt(3) == '(') {
+        if (operator.length() > 4 && operator.charAt(3) == '(') {//Проверка на унарные операции
             currentPosition = findClosingBracketPosition(operator, 3);
             if (currentPosition != operator.length() - 1) {
                 gotoNext();
@@ -79,17 +80,15 @@ public abstract class Interpreter {
         }
 
         gotoNext();
-        currentPosition = 0;
-        level = 6;
-        bracketCount = 0;
-        for (int i = operator.length() - 1; i > -1; i--) {
+
+        for (int i = operator.length() - 1; i > -1; i--) {//Проверка на бинарные операции
             switch (operator.substring(i, i + 1)) {
                 case "(": bracketCount++; break;
                 case ")": bracketCount--; break;
                 case "+":
                     if (bracketCount == 0 && level > 0) {
                         currentPosition = i;
-                        level = 0;
+                        level = 0;//Приоритет операций
                     }
                     break;
                 case "-":
@@ -124,7 +123,7 @@ public abstract class Interpreter {
                     break;
             }
         }
-
+        //В currentPosition находится позиция операции с нужным уровнем приоритета и без скобок вокруг нее
         if (currentPosition == 0 || currentPosition == operator.length() - 1) {
             handleError();
         }
@@ -146,7 +145,7 @@ public abstract class Interpreter {
         return new FormulaNumberElement(0.0);
     }
 
-    public static FormulaElement evaluateFormula(String formula) {
+    public static FormulaElement evaluateFormula(String formula) {//Принимает формулу и парсит её
         if (formula.isEmpty()) {
             hasError = true;
             return new FormulaNumberElement(0.0);
@@ -171,9 +170,9 @@ public abstract class Interpreter {
 
     private static void handleError() {
         hasError = true;
-    }
+    }//Наличие ошибки, тогда true
 
-    private static void gotoNext() {
+    private static void gotoNext() {//Сброс текущей позиции и уровня операций
         currentPosition = 0;
         level = 6;
         bracketCount = 0;

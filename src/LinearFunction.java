@@ -120,6 +120,7 @@ public class LinearFunction extends Application {
     }
 
     private void handleMousePressed(MouseEvent event) {
+        //Начальные координаты, для реализации перемещения
         lastX = event.getX();
         lastY = event.getY();
         isPanning = true;

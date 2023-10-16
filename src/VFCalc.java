@@ -5,7 +5,7 @@ abstract class VFCalc {//Вычисление факториала
         }
         double result = 1.0;
         for (int i = 0; i < number; i++) {
-            result *= (double) (i + 1);
+            result *= i + 1;
         }
         return result;
     }
