@@ -1,152 +1,69 @@
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.ScatterChart;
-import javafx.scene.chart.XYChart;
-import javafx.scene.input.ScrollEvent;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Pane;
-import javafx.scene.shape.Circle;
-import javafx.stage.Stage;
-
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LinearFunction extends Application {
+public class LinearFunction extends JFrame {
     private static String formula;
+    private static final int width = 900;
+    private static final int height = 900;
+    private static final double deltaX = 0.001;
 
-    private final static int height = 900;
-    private final static int width = 900;
-    private static final double deltaX = 0.001; // Плотность точек
-
-    // Области значений
     private static double minX = -10;
     private static double maxX = 10;
     private static double minY = -10;
     private static double maxY = 10;
-    private double lastX;
-    private double lastY;
-    private boolean isPanning = false;
-    private NumberAxis xAxis;
-    private NumberAxis yAxis;
+    private List<Point> dataPoints;
 
-    public void setFormula(String formula) {
-        LinearFunction.formula = formula;
-    }
+    public LinearFunction(String formula) {
+        this.formula = formula;
+        this.dataPoints = new ArrayList<>();
+        setTitle("График функции");
+        setSize(width, height);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    public void launchApp() {
-        launch();
-    }
+        JPanel chartPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
 
-    @Override
-    public void start(Stage primaryStage) {
-        primaryStage.setTitle("График функции");
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        xAxis = new NumberAxis(minX, maxX, 1);
-        yAxis = new NumberAxis(minY, maxY, 1);
-        xAxis.setLabel("X");
-        yAxis.setLabel("Y");
+                g2.setColor(Color.BLACK);
+                int x0 = (int) ((-minX / (maxX - minX)) * getWidth());
+                int y0 = (int) ((maxY / (maxY - minY)) * getHeight());
 
-        ScatterChart<Number, Number> scatterChart = new ScatterChart<>(xAxis, yAxis);
-        scatterChart.setTitle("График функции f(x) = " + formula);
-        scatterChart.setPrefSize(width, height);
+                g2.drawLine(0, y0, getWidth(), y0);
+                g2.drawLine(x0, 0, x0, getHeight());
 
-        XYChart.Series<Number, Number> series = new XYChart.Series<>();
-        series.setName(formula);
+                FormulaElement result = Interpreter.evaluateFormula(formula);
+                for (double x = minX; x <= maxX; x += deltaX) {
+                    Interpreter.setVariable(0, x);
 
-        FormulaElement result = Interpreter.evaluateFormula(formula);
-        List<XYChart.Data<Number, Number>> dataPoints = new ArrayList<>();
-        for (double x = minX; x <= maxX; x += deltaX) {
-            Interpreter.setVariable(0, x);
+                    if (Interpreter.hasError()) {
+                        System.out.println("Ошибка в формуле!");
+                        break;
+                    } else {
+                        double y = result.getValue();
+                        System.out.println("При x = " + x + " ; Значение y = " + y);
 
-            if (Interpreter.hasError()) {
-                System.out.println("Ошибка в формуле!");
-                break;
-            } else {
-                double y = result.getValue();
-                System.out.println("При x = " + x + " ; Значение y = " + y);
+                        int xScreen = (int) ((x - minX) / (maxX - minX) * getWidth());
+                        int yScreen = (int) ((maxY - y) / (maxY - minY) * getHeight());
+                        dataPoints.add(new Point(xScreen, yScreen));
+                    }
+                }
 
-                // Создаём точку, чтобы установить радиус
-                XYChart.Data<Number, Number> dataPoint = new XYChart.Data<>(x, y);
-                Circle circle = new Circle(1.0); // Задайте радиус точки
-                dataPoint.setNode(circle);
-                dataPoints.add(dataPoint);
+                g2.setColor(Color.BLUE);
+                for (Point point : dataPoints) {
+                    g2.fillRect(point.x, point.y, 2, 2);
+                }
             }
-        }
+        };
 
-        // Добавление точек в график
-        series.getData().addAll(dataPoints);
-        scatterChart.getData().add(series);
-
-        // Обработка событий масштабирования и перемещения
-        scatterChart.setOnScroll(this::handleScroll);
-        scatterChart.setOnMousePressed(this::handleMousePressed);
-        scatterChart.setOnMouseDragged(this::handleMouseDragged);
-        scatterChart.setOnMouseReleased(this::handleMouseReleased);
-
-        // Интерфейс сцены
-        Pane chartPane = new Pane(scatterChart);
-        Scene scene = new Scene(chartPane, width, height);
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        add(chartPanel);
     }
 
-    private void handleScroll(ScrollEvent event) {
-        double delta = event.getDeltaY();
-        double zoomFactor = 1.1;
 
-        // Изменение масштаба графика при прокрутке
-        if (delta < 0) {
-            minX /= zoomFactor;
-            maxX /= zoomFactor;
-            minY /= zoomFactor;
-            maxY /= zoomFactor;
-        } else {
-            minX *= zoomFactor;
-            maxX *= zoomFactor;
-            minY *= zoomFactor;
-            maxY *= zoomFactor;
-        }
-
-        // Обновление границ осей
-        xAxis.setLowerBound(minX);
-        xAxis.setUpperBound(maxX);
-        yAxis.setLowerBound(minY);
-        yAxis.setUpperBound(maxY);
-
-        event.consume();
-    }
-
-    private void handleMousePressed(MouseEvent event) {
-        //Начальные координаты, для реализации перемещения
-        lastX = event.getX();
-        lastY = event.getY();
-        isPanning = true;
-    }
-
-    private void handleMouseDragged(MouseEvent event) {
-        if (isPanning) {
-            double deltaX = event.getX() - lastX;
-            double deltaY = event.getY() - lastY;
-
-            // Перемещение графика при перетаскивании
-            minX += deltaX / 50.0;
-            maxX += deltaX / 50.0;
-            minY -= deltaY / 50.0;
-            maxY -= deltaY / 50.0;
-
-            // Обновление границ осей
-            xAxis.setLowerBound(minX);
-            xAxis.setUpperBound(maxX);
-            yAxis.setLowerBound(minY);
-            yAxis.setUpperBound(maxY);
-
-            lastX = event.getX();
-            lastY = event.getY();
-        }
-    }
-
-    private void handleMouseReleased(MouseEvent event) {
-        isPanning = false;
-    }
 }
