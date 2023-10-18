@@ -56,8 +56,6 @@ public class LinearFunction extends Application {
 
         FormulaElement result = Interpreter.evaluateFormula(formula);
         List<XYChart.Data<Number, Number>> dataPoints = new ArrayList<>();
-
-        //Вычисления точек графика
         for (double x = minX; x <= maxX; x += deltaX) {
             Interpreter.setVariable(0, x);
 

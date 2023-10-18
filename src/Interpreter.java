@@ -20,19 +20,20 @@ public abstract class Interpreter {
         }
     }
 
-    private static int findClosingBracketPosition(String operator, int start) {//Находит позицию закрывающей скобки
-        int result = start;
+    private static int findClosingBracketPosition(String operator, int start) {
+        int bracketCount = 0;
         for (int i = start; i < operator.length(); i++) {
-            switch (operator.substring(i, i + 1)) {
-                case "(" -> bracketCount++;
-                case ")" -> bracketCount--;
+            char c = operator.charAt(i);
+            if (c == '(') {
+                bracketCount++;
+            } else if (c == ')') {
+                bracketCount--;
             }
             if (bracketCount == 0) {
-                result = i;
-                break;
+                return i;
             }
         }
-        return result;
+        return -1; // Если не найдена закрывающая скобка
     }
 
     private static FormulaElement parseExpression(String operator) {

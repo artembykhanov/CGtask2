@@ -6,8 +6,8 @@ public class Main {
 
        LinearFunction plotter1 = new LinearFunction();
        plotter1.setFormula(formula);
-       // Запускаем приложение
        plotter1.launchApp();
+       // Запускаем приложение
 
     }
 
