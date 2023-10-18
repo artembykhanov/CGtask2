@@ -9,16 +9,20 @@ public class LinearFunction extends JFrame {
     private static final int width = 900;
     private static final int height = 900;
     private static final double deltaX = 0.001;
+    private static final double zoomFactor = 1.1;
 
-    private static double minX = -10;
-    private static double maxX = 10;
-    private static double minY = -10;
-    private static double maxY = 10;
+    private double minX = -10;
+    private double maxX = 10;
+    private double minY = -10;
+    private double maxY = 10;
     private List<Point> dataPoints;
+    private int lastMouseX;
+    private int lastMouseY;
+    private boolean isPanning;
 
     public LinearFunction(String formula) {
         this.formula = formula;
-        this.dataPoints = new ArrayList<>();
+        this.dataPoints = new ArrayList();
         setTitle("График функции");
         setSize(width, height);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -29,14 +33,15 @@ public class LinearFunction extends JFrame {
                 super.paintComponent(g);
 
                 Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+                //Оси
                 g2.setColor(Color.BLACK);
                 int x0 = (int) ((-minX / (maxX - minX)) * getWidth());
                 int y0 = (int) ((maxY / (maxY - minY)) * getHeight());
-
                 g2.drawLine(0, y0, getWidth(), y0);
                 g2.drawLine(x0, 0, x0, getHeight());
+
+                dataPoints.clear(); // Очищаем список точек
 
                 FormulaElement result = Interpreter.evaluateFormula(formula);
                 for (double x = minX; x <= maxX; x += deltaX) {
@@ -47,23 +52,74 @@ public class LinearFunction extends JFrame {
                         break;
                     } else {
                         double y = result.getValue();
-                        System.out.println("При x = " + x + " ; Значение y = " + y);
-
                         int xScreen = (int) ((x - minX) / (maxX - minX) * getWidth());
                         int yScreen = (int) ((maxY - y) / (maxY - minY) * getHeight());
                         dataPoints.add(new Point(xScreen, yScreen));
                     }
                 }
 
-                g2.setColor(Color.BLUE);
+                g2.setColor(new Color(255, 0, 0));
                 for (Point point : dataPoints) {
                     g2.fillRect(point.x, point.y, 2, 2);
                 }
             }
         };
 
+        chartPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                lastMouseX = e.getX();
+                lastMouseY = e.getY();
+                isPanning = true;
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                isPanning = false;
+            }
+        });
+
+        chartPanel.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (isPanning) {
+                    int deltaX = e.getX() - lastMouseX;
+                    int deltaY = e.getY() - lastMouseY;
+
+                    double xDelta = deltaX * (maxX - minX) / getWidth();
+                    double yDelta = deltaY * (maxY - minY) / getHeight();
+
+                    minX -= xDelta;
+                    maxX -= xDelta;
+                    minY += yDelta;
+                    maxY += yDelta;
+
+                    lastMouseX = e.getX();
+                    lastMouseY = e.getY();
+
+                    chartPanel.repaint();
+                }
+            }
+        });
+
+        chartPanel.addMouseWheelListener(e -> {
+            int rotation = e.getWheelRotation();
+            if (rotation > 0) {
+                // Уменьшение масштаба
+                minX /= zoomFactor;
+                maxX /= zoomFactor;
+                minY /= zoomFactor;
+                maxY /= zoomFactor;
+            } else {
+                // Увеличение масштаба
+                minX *= zoomFactor;
+                maxX *= zoomFactor;
+                minY *= zoomFactor;
+                maxY *= zoomFactor;
+            }
+            chartPanel.repaint();
+        });
         add(chartPanel);
+        setVisible(true);
     }
-
-
 }
